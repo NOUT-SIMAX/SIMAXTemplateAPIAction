@@ -34,7 +34,7 @@ function _traiteEndpoint(array $config, $if_matches)
                 if (is_callable($if_matches)){
                     return $if_matches($conf, $matches);
                 }
-                if (array_key_exists($if_matches, $conf)){
+                if (array_key_exists($if_matches, $conf) && !is_null($conf[$if_matches])){
                     if (is_callable($conf[$if_matches])){
                         return $conf[$if_matches]($matches);
                     }
@@ -66,7 +66,7 @@ function getInfoCnx($config)
     _traiteEndpoint($config, function ($conf, $matches) use ($infoCnx) {
         foreach(['host', 'port', 'username', 'password'] as $key)
         {
-            if (array_key_exists($key, $conf)){
+            if (array_key_exists($key, $conf) && !is_null($conf[$key])){
                 $infoCnx->$key = $conf[$key];
             }
         }
@@ -103,7 +103,7 @@ function getClientClass($config)
 function getParams($config, $client, $mode_debug, $debug)
 {
     $fromEndpoint = _traiteEndpoint($config, function($conf, $matches) use ($client, $mode_debug, $debug) {
-        if (array_key_exists('params', $conf)) {
+        if (array_key_exists('params', $conf) && !is_null($conf['params'])) {
             if (is_callable($conf['params'])){
                 return $conf['params']($matches, $client, $mode_debug, $debug);
             }
@@ -115,7 +115,7 @@ function getParams($config, $client, $mode_debug, $debug)
         return $fromEndpoint;
     }
 
-    if (array_key_exists('params', $config))
+    if (array_key_exists('params', $config) && !is_null($config['params']))
     {
         if (is_callable($config['params'])){
             return $config['params']($client, $mode_debug, $debug);
@@ -128,7 +128,7 @@ function getParams($config, $client, $mode_debug, $debug)
 function transformeRetour($config, $ret)
 {
     $fromEndpoint = _traiteEndpoint($config, function($conf, $matches) use ($ret) {
-        if (array_key_exists('transforme_retour', $conf)) {
+        if (array_key_exists('transforme_retour', $conf) && !is_null($conf['transforme_retour'])) {
             return $conf['transforme_retour']($matches, $ret);
         }
         return null;
@@ -148,7 +148,7 @@ function transformeRetour($config, $ret)
 function envoiRetour($config, $ret)
 {
     $fromEndpoint = _traiteEndpoint($config, function($conf, $matches) use ($ret) {
-        if (array_key_exists('envoi_retour', $conf)) {
+        if (array_key_exists('envoi_retour', $conf) && !is_null($conf['envoi_retour'])) {
             $conf['envoi_retour']($matches, $ret);
             return true;
         }
@@ -172,7 +172,7 @@ function envoiRetour($config, $ret)
 function onCnxException($config, $rep, \Exception $e, $key)
 {
     $fromEndpoint = _traiteEndpoint($config, function($conf, $matches) use ($e, $rep, $key) {
-        if (array_key_exists($key, $conf)) {
+        if (array_key_exists($key, $conf) && is_callable($conf[$key])) {
             return $conf[$key]($matches, $rep, $e);
         }
         return null;
@@ -242,7 +242,7 @@ function _verifyApiKey($apiKeyConfigured, $debug)
 function executeSecurity($config, $debug)
 {
     $fromEndpoint = _traiteEndpoint($config, function($conf, $matches) use ($debug) {
-        if (array_key_exists('apikey', $conf)) {
+        if (array_key_exists('apikey', $conf) && !is_null($conf['apikey'])) {
             if (is_callable($conf['apikey'])){
                 return $conf['apikey']($matches, $debug);
             }
