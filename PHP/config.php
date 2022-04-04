@@ -1,0 +1,169 @@
+<?php
+
+
+
+$config = [
+    /*-----------------------*/
+    /* api key cette application qui doit etre declare dans NOUTOnline */
+    'apikey' => '',
+
+    /*-----------------------*/
+    /* utilisateur qui execute l'action */
+    'username' => '',
+
+    /*-----------------------*/
+    /* mot de passe de l'utilisateur */
+    'password' => '',
+
+    /*-----------------------*/
+    /* adresse ip ou nom dns du NOUTOnline (si vide, par défaut dans le client 127.0.0.1) */
+    'host'     => '127.0.0.1',
+
+    /*-----------------------*/
+    /* port du NOUTOnline (si vide, par défaut dans le client : 8052)  */
+    'port'     => 8052,
+
+    /*-----------------------*/
+    /* identifiant unique de l'action a executer, a recuperer depuis l'action dans SIMAX (clic droit "copier l'identifiant unique") */
+    //'idaction' => '',
+
+    /*-----------------------*/
+    /* type d'action [aff / decl] (decl par défaut) */
+    //'typeaction' => '',
+
+    /*-----------------------*/
+    /* initialisation des paramètres de l'action en fonction de $_GET, $_POST et php://input
+     * [] par défaut
+     */
+    //'params' => []
+    /* ou */
+    //'params' => function($client, $mode_debug, $debug) { return []; }
+
+    /*-----------------------*/
+    /* transormation du retour (quand on ne veut qu'une partie des infos retourner, ou les mettres en forme différent */
+    //'transforme_retour' => function($ret) { return json_decode((string)$ret->id_35523345582676->id_213013379439119->id_212385824601317); }
+
+    /*-----------------------*/
+    /* gestion du retour quand on veut renvoyer autre chose que du json (ou faire une redirection) */
+    //'envoi_retour' => function($rep) { $url='./toto.html';header('location: '.$url); }
+
+    /*-----------------------*/
+    /* surcharge du comportement par défaut sur erreur à la connexion
+     * renvoi true quand c'est la fonction qui fait l'affichage, false quand la fonction ne fait que modifier $rep
+     */
+    //'on_cnx_exception' => function($rep, $e) { return false; },
+
+    /*-----------------------*/
+    /* surcharge du comportement par défaut sur erreur pendant l'action
+     * renvoi true quand c'est la fonction qui fait l'affichage, false quand la fonction ne fait que modifier $rep
+     */
+    //'on_action_exception' => function($rep, $e) { return false; },
+
+    /*-----------------------*/
+    /* liste des différents point d'entree si on utilise le mode rewrite
+     * c'est un tableau de tableau avec les clé possibles suivantes
+     * (toutes les fonctions prennent en premier paramètre $matches , array qui contient les captures renvoyées par la regex)
+     *      re : (obligatoire) expression régulière pour repérer le point d'entree
+     *      apikey : chaine
+     *      host: chaine
+     *      port : chaine
+     *      username : chaine
+     *      password: chaine     *
+     *      idaction : chaine ou function($matches)
+     *      typeaction : chaine (aff | decl)
+     *      params : array ou function($matches, $client, $mode_debug, $debug)
+     *      transforme_retour : function($matches, $ret)
+     *      envoi_retour : function($matches, $rep)
+     *      on_cnx_exception : function($matches, $rep, $e)
+     *      on_action_exception : function($matches, $rep, $e)
+     *
+     *  si la clé n'existe pas, on va voir la clé correspondante à la racine de $config
+     * exemples :
+     */
+    'endpoints' => [
+        //affichage du bundle de prod
+        [
+            're' => '/^bundle\/prod(?:\.php)?$/',
+            'idaction' => '219331022079373',
+            'typeaction' => 'aff',
+            'transforme_retour' => function($matches, $ret) { return json_decode((string)$ret->id_35523345582676->id_213013379439119->id_212385824601317); },
+        ],
+        //affichage du recap des tickets SAV
+        [
+            're' => '/^sav\/recap(?:\.php)?$/',
+            'idaction' => '222638553247369', //recap SAV
+        ],
+        [
+            're' => '/^woocommerce\/webhook(?:\.php)?$/',
+            'idaction' => '226199110064051', //recap SAV
+            'apikey' => function($matches, $debug){
+
+                $headers = getallheaders();
+                $computed=null;
+                $signature=$headers['X-Wc-Webhook-Signature'] ?? false;
+                if ($signature)
+                {
+                    $secret = "p?e@i}I4(bqeS'}K'HKHBM}!:@H*D0x>j^IOizn!<)*)L{&|AwYS#&s[m{Hg.%";
+
+                    $computed = base64_encode(hash_hmac('sha256', @file_get_contents('php://input'), $secret, true));
+
+                    /** @var \NOUT\DebugTrace $debug */
+                    $debug->writeTrace(print_r(['signature'=>$signature, 'computed'=>$computed], true));
+
+                    if ($computed == $signature){
+                        return true;
+                    }
+                }
+
+                $debug->writeTrace(!$signature ? 'pas de signature présente' : 'signature non equal');
+                $debug->endTrace();
+
+                http_response_code (200);
+                $rep    = new \stdClass();
+                $rep->status = 'error';
+                $rep->error = 3;
+                $rep->msg = 'not allowed';
+
+                if ($debug->isActive()){
+                    $rep->debug = new \stdClass();
+                    $rep->debug->headers = $headers;
+                    $rep->debug->headers_found = $signature;
+                    $rep->debug->computed = $computed;
+                }
+                return false;
+            },
+            'params' => function($matches, $client, $mode_debug, $debug){
+                $headers = getallheaders();
+                $topic = $headers['X-Wc-Webhook-Topic'] ?? 'no-topic';
+                return [
+                    '219112414026221' => @file_get_contents('php://input'), //json
+                    '218287780399416' => $topic,
+                ];
+            },
+            'on_cnx_exception' => function($rep, $e){
+
+                $rep->status = 'error';
+                $rep->error = $e->getCode();
+                $rep->msg = $e->getMessage();
+
+                http_response_code (200);
+                header('Content-Type: application/json');
+                echo json_encode($rep);
+
+                return true;
+            },
+            'on_action_exception' => function($rep, $e){
+
+                $rep->status = 'error';
+                $rep->error = $e->getCode();
+                $rep->msg = $e->getMessage();
+
+                http_response_code (200);
+                header('Content-Type: application/json');
+                echo json_encode($rep);
+                return true;
+            },
+        ],
+    ]
+];
+

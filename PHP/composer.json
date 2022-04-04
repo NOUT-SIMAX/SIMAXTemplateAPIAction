@@ -1,0 +1,23 @@
+{
+    "name": "nout/phptemplate",
+    "description": "template pour custom url",
+    "minimum-stability": "stable",
+    "license": "proprietary",
+    "authors": [
+        {
+            "name": "ninon",
+            "email": "ninon@nout.fr"
+        }
+    ],
+    "autoload": {
+        "psr-4": {
+            "NOUT\\": "NOUT"
+        }
+    },
+    "require": {
+        "ext-json": "*",
+        "ext-apache": "*",
+        "ext-simplexml": "*",
+        "ext-soap": "*"
+    }
+}
