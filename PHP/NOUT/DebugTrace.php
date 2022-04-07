@@ -48,6 +48,7 @@ class DebugTrace
 
         $this->_fic = fopen($this->_filename,"a");
         $this->writeTrace('------------------- debut debug -----------------');
+        $this->writeTrace('from: ' .$_SERVER['REMOTE_ADDR'].' proxy:'.($_SERVER['HTTP_X_FORWARDED_FOR'] ?? ''));
         $this->writeTrace('input: ' .file_get_contents('php://input'));
     }
 
