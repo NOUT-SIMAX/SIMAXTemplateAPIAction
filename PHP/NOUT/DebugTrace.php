@@ -69,6 +69,7 @@ class DebugTrace
         }
 
         fwrite($this->_fic, $this->_uniqueid);
+        fwrite($this->_fic, "\t");
         fwrite($this->_fic, date('Y-m-d H:i:s'));
         fwrite($this->_fic, "\t");
         fwrite($this->_fic, $trace);
