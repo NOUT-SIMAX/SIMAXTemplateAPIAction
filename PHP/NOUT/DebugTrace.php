@@ -6,18 +6,20 @@ namespace NOUT;
 class DebugTrace
 {
     protected $_fic;
-	protected $_active=false;
-	protected $_host='127.0.0.1';
-	protected $_port=8052;
-	protected $_filename = '';
-	
-	public function __construct($active=false)
-	{
-        $this->_active = $active;
+    protected $_active=false;
+    protected $_host='127.0.0.1';
+    protected $_port=8052;
+    protected $_filename = '';
+    protected $_uniqueid;
 
-        $time = new \DateTime();
-        $this->_filename = './trace_debug_'.( $time->format('Ymd')).'.txt';
-	}
+    public function __construct($active=false)
+    {
+          $this->_active = $active;
+          $this->_uniqueid = uniqid('req-');
+
+          $time = new \DateTime();
+          $this->_filename = './trace_debug_'.( $time->format('Ymd')).'.txt';
+    }
 
     /**
      * @param string $host
@@ -66,6 +68,7 @@ class DebugTrace
             return ;
         }
 
+        fwrite($this->_fic, $this->_uniqueid);
         fwrite($this->_fic, date('Y-m-d H:i:s'));
         fwrite($this->_fic, "\t");
         fwrite($this->_fic, $trace);
